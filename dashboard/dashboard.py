@@ -74,24 +74,34 @@ else:
     start_date = date_range[0]
     end_date = date_range[0]
 
-stations = df["station"].unique()
+# --- PERBAIKAN: Menambahkan Opsi "All Stations" ---
+
+station_options = ["All Stations"] + list(df["station"].unique())
 
 selected_stations = st.sidebar.multiselect(
     "Pilih Stasiun Pemantau:",
-    options=stations,
-    default=stations
+    options=station_options,
+    default=["All Stations"] # Menjadikan "All Stations" sebagai pilihan default
 )
 
-filtered_df = df[
-    (df["datetime"].dt.date >= start_date) &
-    (df["datetime"].dt.date <= end_date) &
-    (df["station"].isin(selected_stations))
-].copy()
+# --- PERBAIKAN: Logika Filter Data ---
+
+if "All Stations" in selected_stations:
+    filtered_df = df[
+        (df["datetime"].dt.date >= start_date) & 
+        (df["datetime"].dt.date <= end_date)
+    ].copy()
+
+else:
+    filtered_df = df[
+        (df["datetime"].dt.date >= start_date) & 
+        (df["datetime"].dt.date <= end_date) & 
+        (df["station"].isin(selected_stations))
+    ].copy()
 
 # ==============================
 # MAIN DASHBOARD
 # ==============================
-
 st.title("☁️ Air Quality Data Dashboard (Beijing)")
 st.markdown(
 """
@@ -177,7 +187,6 @@ with col_chart1:
 
 
 with col_chart2:
-
     st.markdown("#### Perbandingan PM2.5 Antar Stasiun")
 
     station_pm25 = (
@@ -190,16 +199,23 @@ with col_chart2:
 
     fig2, ax2 = plt.subplots(figsize=(10,6))
 
+    # Pewarnaan batang chart
+    if not station_pm25.empty:
+        max_val = station_pm25['PM2.5'].max()
+        min_val = station_pm25['PM2.5'].min()
+        colors = ["#d32f2f" if val == max_val else "#388e3c" if val == min_val else "#d3d3d3" for val in station_pm25['PM2.5']]
+    else:
+        colors = "viridis"
+
     sns.barplot(
         data=station_pm25,
         x="PM2.5",
         y="station",
-        palette="viridis",
+        palette=colors,
         ax=ax2
     )
 
     st.pyplot(fig2)
-
 
 st.markdown("---")
 
